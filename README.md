@@ -1,2 +1,3 @@
 # blogilista-backend
-Full Stack Open -kurssin osa 4-> tehtävät
+[Full Stack Open](https://fullstackopen.com/) -kurssin tehtäviä:
+* [Osa 4](https://fullstackopen.com/osa4): blogilistan backend
