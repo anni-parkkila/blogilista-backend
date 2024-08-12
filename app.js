@@ -2,11 +2,11 @@ require('dotenv').config()
 const express = require('express')
 const app = express()
 const cors = require('cors')
+const blogsRouter = require('./controllers/blogs')
+
 const mongoose = require('mongoose')
 
 const morgan = require('morgan')
-
-const Blog = require('./models/blog')
 
 
 const mongoUrl = process.env.MONGODB_URI
@@ -26,32 +26,6 @@ morgan.token('post-data', function (req) {
 })
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :post-data'))
 
-app.get('/api/blogs', (request, response) => {
-  Blog
-    .find({})
-    .then(blogs => {
-      response.json(blogs)
-    })
-})
-
-app.post('/api/blogs', (request, response) => {
-  const blog = request.body
-
-  new Blog(blog)
-    .save()
-    .then(result => {
-      response.status(201).json(result)
-    })
-})
-
-app.get('/info', async (request, response, next) => {
-  await Blog.countDocuments({})
-    .then(numberOfBlogs => {
-      response.send(
-        `<p>Bloglist has info for ${numberOfBlogs} blogs</p>
-          <p>${new Date()}</p>`
-      )})
-    .catch(error => next(error))
-})
+app.use('/api/blogs', blogsRouter)
 
 module.exports = app
