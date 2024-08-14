@@ -53,7 +53,6 @@ const blogList = [
   }
 ]
 
-
 describe('total likes', () => {
 
   test('of an empty list is zero', () => {
@@ -88,9 +87,9 @@ describe('favorite blog', () => {
     const result = listHelper.favoriteBlog(blogList.slice(0,1))
     const favorite =
     {
-      title: 'React patterns',
-      author: 'Michael Chan',
-      likes: 7
+      title: blogList.slice(0,1)[0].title,
+      author: blogList.slice(0,1)[0].author,
+      likes: blogList.slice(0,1)[0].likes
     }
     assert.deepEqual(result, favorite)
   })
@@ -104,5 +103,34 @@ describe('favorite blog', () => {
         likes: 12
       }
     assert.deepEqual(result, favorite)
+  })
+})
+
+describe('author with the most blogs', () => {
+
+  test('when the list is empty, there are no authors', () => {
+    const result = listHelper.mostBlogs([])
+    assert.strictEqual(result, undefined)
+  })
+
+  test('when list has only one blog, most blogs are from that author', () => {
+
+    const result = listHelper.mostBlogs(blogList.slice(0,1))
+    const author =
+    {
+      author: blogList.slice(0,1)[0].author,
+      blogs: 1
+    }
+    assert.deepEqual(result, author)
+  })
+
+  test('out of all the blogs', () => {
+    const result = listHelper.mostBlogs(blogList)
+    const author =
+    {
+      author: 'Robert C. Martin',
+      blogs: 3
+    }
+    assert.deepEqual(result, author)
   })
 })
