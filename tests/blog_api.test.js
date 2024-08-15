@@ -57,6 +57,24 @@ test('a new blog can be added', async () => {
   assert(title.includes('Adventures of Sherlock Holmes'))
 })
 
+test('likes will be set to 0 if it is undefined while posting', async () => {
+  const newBlog = {
+    title: 'Adventures of Sherlock Holmes',
+    author: 'John H. Wilson',
+    url: 'b221.co.uk'
+  }
+
+  await api
+    .post('/api/blogs')
+    .send(newBlog)
+    .expect(201)
+    .expect('Content-Type', /application\/json/)
+
+  const blogs = await helper.blogsInDb()
+
+  assert.strictEqual(blogs.at(-1).likes, 0)
+})
+
 after(async () => {
   await mongoose.connection.close()
 })
