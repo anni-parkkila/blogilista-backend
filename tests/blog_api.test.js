@@ -2,31 +2,17 @@ const { test, beforeEach, after } = require('node:test')
 const assert = require('node:assert')
 const mongoose = require('mongoose')
 const supertest = require('supertest')
+const helper = require('./test_helper')
 const Blog = require('../models/blog')
 const app = require('../app')
 
 const api = supertest(app)
 
-const initialBlogs = [
-  {
-    title: 'Matin Testiploki',
-    author: 'Matti Meikäläinen',
-    url: 'matinploki.fi',
-    likes: 1
-  },
-  {
-    title: 'Maijan Testiblogi',
-    author: 'Maija Mehiläinen',
-    url: 'maijanblogi.fi',
-    likes: 3
-  }
-]
-
 beforeEach(async () => {
   await Blog.deleteMany({})
-  let blogObject = new Blog(initialBlogs[0])
+  let blogObject = new Blog(helper.initialBlogs[0])
   await blogObject.save()
-  blogObject = new Blog(initialBlogs[1])
+  blogObject = new Blog(helper.initialBlogs[1])
   await blogObject.save()
 })
 
@@ -38,8 +24,16 @@ test('blogs are returned as json', async () => {
 })
 
 test('there are two blogs', async () => {
-  const response = await api.get('/api/blogs')
-  assert.strictEqual(response.body.length, initialBlogs.length)
+  const blogs = await helper.blogsInDb()
+  assert.strictEqual(blogs.length, helper.initialBlogs.length)
+})
+
+test('blogs have a unique property called id, not _id', async () => {
+  const blogs = await helper.blogsInDb()
+  blogs.forEach(blog => {
+    assert.strictEqual(blog._id, undefined)
+    assert.notStrictEqual(blog.id, undefined)
+  })
 })
 
 after(async () => {
