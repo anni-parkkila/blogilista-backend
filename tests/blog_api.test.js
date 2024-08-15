@@ -75,6 +75,32 @@ test('likes will be set to 0 if it is undefined while posting', async () => {
   assert.strictEqual(blogs.at(-1).likes, 0)
 })
 
+test('a blog without title or url is not added', async () => {
+  const newBlogNoTitle = {
+    author: 'John H. Wilson',
+    url: 'b221.co.uk'
+  }
+
+  await api
+    .post('/api/blogs')
+    .send(newBlogNoTitle)
+    .expect(400)
+
+  const newBlogNoUrl = {
+    title: 'Adventures of Sherlock Holmes',
+    author: 'John H. Wilson'
+  }
+
+  await api
+    .post('/api/blogs')
+    .send(newBlogNoUrl)
+    .expect(400)
+
+  const blogs = await helper.blogsInDb()
+
+  assert.strictEqual(blogs.length, helper.initialBlogs.length)
+})
+
 after(async () => {
   await mongoose.connection.close()
 })
