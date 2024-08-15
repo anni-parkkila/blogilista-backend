@@ -36,6 +36,27 @@ test('blogs have a unique property called id, not _id', async () => {
   })
 })
 
+test('a new blog can be added', async () => {
+  const newBlog = {
+    title: 'Adventures of Sherlock Holmes',
+    author: 'John H. Wilson',
+    url: 'b221.co.uk',
+    likes: 0
+  }
+
+  await api
+    .post('/api/blogs')
+    .send(newBlog)
+    .expect(201)
+    .expect('Content-Type', /application\/json/)
+
+  const blogs = await helper.blogsInDb()
+  const title = blogs.map(r => r.title)
+
+  assert.strictEqual(blogs.length, helper.initialBlogs.length + 1)
+  assert(title.includes('Adventures of Sherlock Holmes'))
+})
+
 after(async () => {
   await mongoose.connection.close()
 })
