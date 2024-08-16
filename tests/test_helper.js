@@ -27,5 +27,7 @@ const nonExistingId = async () => {
 }
 
 module.exports = {
-  initialBlogs, blogsInDb, nonExistingId
+  initialBlogs,
+  blogsInDb,
+  nonExistingId
 }
