@@ -101,6 +101,46 @@ describe('when there is initially some blogs saved', () => {
     })
   })
 
+  describe('updating a blog', () => {
+    test('updating succeeds if id is valid', async () => {
+      const blogsAtStart = await helper.blogsInDb()
+      const blogToUpdate = blogsAtStart[0]
+      const updatedLikes = {
+        ...blogToUpdate,
+        likes: 1000
+      }
+
+      await api
+        .put(`api/blogs/${blogToUpdate.id}`)
+        .send(updatedLikes)
+        .expect(updatedLikes)
+
+      const blogsAtEnd = await helper.blogsInDb()
+      const updatedBlog = blogsAtEnd[0]
+
+      assert.strictEqual(updatedBlog.likes, 1000)
+    })
+
+    test('updating does not succeed if id is not valid', async () => {
+      const blogsAtStart = await helper.blogsInDb()
+      const blogToUpdate = blogsAtStart[0]
+      const updatedLikes = {
+        ...blogToUpdate,
+        likes: 1000
+      }
+
+      await api
+        .put('api/blogs/idnotvalid000')
+        .send(updatedLikes)
+        .expect(404)
+
+      const blogsAtEnd = await helper.blogsInDb()
+      const updatedBlog = blogsAtEnd[0]
+
+      assert.strictEqual(blogToUpdate.likes, updatedBlog.likes)
+    })
+  })
+
   describe('deleting a blog', () => {
     test('deleting succeeds if id is valid', async () => {
       const blogsAtStart = await helper.blogsInDb()
