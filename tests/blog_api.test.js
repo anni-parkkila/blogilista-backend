@@ -111,7 +111,7 @@ describe('when there is initially some blogs saved', () => {
       }
 
       await api
-        .put(`api/blogs/${blogToUpdate.id}`)
+        .put(`/api/blogs/${blogToUpdate.id}`)
         .send(updatedLikes)
         .expect(updatedLikes)
 
@@ -130,9 +130,9 @@ describe('when there is initially some blogs saved', () => {
       }
 
       await api
-        .put('api/blogs/idnotvalid000')
+        .put('/api/blogs/idnotvalid000')
         .send(updatedLikes)
-        .expect(404)
+        .expect(400)
 
       const blogsAtEnd = await helper.blogsInDb()
       const updatedBlog = blogsAtEnd[0]
@@ -147,7 +147,7 @@ describe('when there is initially some blogs saved', () => {
       const blogToDelete = blogsAtStart[0]
 
       await api
-        .delete(`api/blogs/${blogToDelete.id}`)
+        .delete(`/api/blogs/${blogToDelete.id}`)
         .expect(204)
 
       const blogsAtEnd = await helper.blogsInDb()
@@ -156,6 +156,18 @@ describe('when there is initially some blogs saved', () => {
 
       const titles = blogsAtEnd.map(r => r.title)
       assert(!titles.includes(blogToDelete.title))
+    })
+
+    test('deleting does not succeed if id is invalid', async () => {
+      const blogsAtStart = await helper.blogsInDb()
+
+      await api
+        .delete('/api/blogs/idnotvalid000')
+        .expect(400)
+
+      const blogsAtEnd = await helper.blogsInDb()
+
+      assert.strictEqual(blogsAtEnd.length, blogsAtStart.length)
     })
   })
 

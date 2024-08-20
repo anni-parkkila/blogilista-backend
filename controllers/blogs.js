@@ -20,7 +20,7 @@ blogsRouter.post('/', async (request, response) => {
   response.status(201).json(savedBlog)
 })
 
-blogsRouter.put('/api/persons/:id', async (request, response) => {
+blogsRouter.put('/:id', async (request, response) => {
   const { likes } = request.body
 
   const updatedBlog = await Blog.findByIdAndUpdate(
