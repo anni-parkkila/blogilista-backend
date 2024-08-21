@@ -1,4 +1,4 @@
-const { test, describe, beforeEach, after } = require('node:test')
+const { test, describe, before, beforeEach, after } = require('node:test')
 const assert = require('node:assert')
 const mongoose = require('mongoose')
 const supertest = require('supertest')
@@ -171,6 +171,34 @@ describe('when there is initially some blogs saved', () => {
     })
   })
 
+})
+
+// user test must be run before the blog test!
+describe('adding a new blog', () => {
+  before(async () => {
+    await Blog.deleteMany({})
+    await Blog.insertMany(helper.initialBlogs)
+  })
+  test('add a new blog', async () => {
+    const newBlog = {
+      title: 'Adventures of Sherlock Holmes',
+      author: 'John H. Wilson',
+      url: 'b221.co.uk',
+      likes: 0
+    }
+
+    await api
+      .post('/api/blogs')
+      .send(newBlog)
+      .expect(201)
+      .expect('Content-Type', /application\/json/)
+
+    const blogs = await helper.blogsInDb()
+    const title = blogs.map(r => r.title)
+
+    assert.strictEqual(blogs.length, helper.initialBlogs.length + 1)
+    assert(title.includes('Adventures of Sherlock Holmes'))
+  })
   after(async () => {
     await mongoose.connection.close()
   })
