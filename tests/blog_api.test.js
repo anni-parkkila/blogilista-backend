@@ -150,14 +150,31 @@ describe('when there is initially some blogs saved', () => {
 
       assert.strictEqual(blogsAtEnd.length, blogsAtStart.length)
     })
+
+    test('a blog cannot be added if token is missing', async () => {
+      const blogsAtStart = await helper.blogsInDb()
+      const newBlog = {
+        title: 'Adventures of Sherlock Holmes',
+        author: 'John H. Wilson',
+        url: 'b221.co.uk',
+        likes: 0
+      }
+
+      await api
+        .post('/api/blogs')
+        .send(newBlog)
+        .expect(401)
+
+      const blogsAtEnd = await helper.blogsInDb()
+
+      assert.strictEqual(blogsAtEnd.length, blogsAtStart.length)
+    })
   })
 
   describe('updating a blog', () => {
     test('updating succeeds if id is valid', async () => {
       const blogsAtStart = await helper.blogsInDb()
-      console.log('start', blogsAtStart)
       const blogToUpdate = blogsAtStart[0]
-      console.log('update', blogToUpdate)
       const updatedLikes = {
         ...blogToUpdate,
         likes: 1000
@@ -173,86 +190,70 @@ describe('when there is initially some blogs saved', () => {
       assert.strictEqual(updatedBlog.likes, 1000)
     })
 
-  //   test('updating does not succeed if id is not valid', async () => {
-  //     const blogsAtStart = await helper.blogsInDb()
-  //     const blogToUpdate = blogsAtStart[0]
-  //     const updatedLikes = {
-  //       ...blogToUpdate,
-  //       likes: 1000
-  //     }
+    test('updating does not succeed if id is not valid', async () => {
+      const blogsAtStart = await helper.blogsInDb()
+      const blogToUpdate = blogsAtStart[0]
+      const updatedLikes = {
+        ...blogToUpdate,
+        likes: 1000
+      }
 
-  //     await api
-  //       .put('/api/blogs/idnotvalid000')
-  //       .send(updatedLikes)
-  //       .expect(400)
+      await api
+        .put('/api/blogs/idnotvalid000')
+        .send(updatedLikes)
+        .expect(400)
 
-  //     const blogsAtEnd = await helper.blogsInDb()
-  //     const updatedBlog = blogsAtEnd[0]
+      const blogsAtEnd = await helper.blogsInDb()
+      const updatedBlog = blogsAtEnd[0]
 
-  //     assert.strictEqual(blogToUpdate.likes, updatedBlog.likes)
-  //   })
+      assert.strictEqual(blogToUpdate.likes, updatedBlog.likes)
+    })
   })
 
-  // describe('deleting a blog', () => {
-  //   test('deleting succeeds if id is valid', async () => {
-  //     const blogsAtStart = await helper.blogsInDb()
-  //     const blogToDelete = blogsAtStart[0]
+  describe('deleting a blog', () => {
+    test('deleting succeeds if id is valid', async () => {
+      const blogsAtStart = await helper.blogsInDb()
+      const blogToDelete = blogsAtStart[0]
 
-  //     await api
-  //       .delete(`/api/blogs/${blogToDelete.id}`)
-  //       .expect(204)
+      const loggedIn = await api
+        .post('/api/login')
+        .send({ username: 'holmes', password: 'sherlocked' })
+        .expect(200)
+      const token = loggedIn.body.token
 
-  //     const blogsAtEnd = await helper.blogsInDb()
+      await api
+        .delete(`/api/blogs/${blogToDelete.id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(204)
 
-  //     assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length - 1)
+      const blogsAtEnd = await helper.blogsInDb()
 
-  //     const titles = blogsAtEnd.map(r => r.title)
-  //     assert(!titles.includes(blogToDelete.title))
-  //   })
+      assert.strictEqual(blogsAtEnd.length, blogsAtStart.length - 1)
 
-  //   test('deleting does not succeed if id is invalid', async () => {
-  //     const blogsAtStart = await helper.blogsInDb()
+      const titles = blogsAtEnd.map(r => r.title)
+      assert(!titles.includes(blogToDelete.title))
+    })
 
-  //     await api
-  //       .delete('/api/blogs/idnotvalid000')
-  //       .expect(400)
+    test('deleting does not succeed if id is invalid', async () => {
+      const blogsAtStart = await helper.blogsInDb()
 
-  //     const blogsAtEnd = await helper.blogsInDb()
+      const loggedIn = await api
+        .post('/api/login')
+        .send({ username: 'holmes', password: 'sherlocked' })
+        .expect(200)
+      const token = loggedIn.body.token
 
-  //     assert.strictEqual(blogsAtEnd.length, blogsAtStart.length)
-  //   })
-  // })
+      await api
+        .delete('/api/blogs/idnotvalid000')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(400)
+
+      const blogsAtEnd = await helper.blogsInDb()
+
+      assert.strictEqual(blogsAtEnd.length, blogsAtStart.length)
+    })
+  })
   after(async () => {
     await mongoose.connection.close()
-
   })
-
-// // user test must be run before the blog test!
-// describe('adding a new blog', () => {
-//   before(async () => {
-//     await Blog.deleteMany({})
-//     await Blog.insertMany(helper.initialBlogs)
-//   })
-//   test('add a new blog', async () => {
-//     const newBlog = {
-//       title: 'Adventures of Sherlock Holmes',
-//       author: 'John H. Wilson',
-//       url: 'b221.co.uk',
-//       likes: 0
-//     }
-
-//     await api
-//       .post('/api/blogs')
-//       .send(newBlog)
-//       .expect(201)
-//       .expect('Content-Type', /application\/json/)
-
-//     const blogs = await helper.blogsInDb()
-//     const title = blogs.map(r => r.title)
-
-//     assert.strictEqual(blogs.length, helper.initialBlogs.length + 1)
-//     assert(title.includes('Adventures of Sherlock Holmes'))
-//   })
-
-//   })
 })
