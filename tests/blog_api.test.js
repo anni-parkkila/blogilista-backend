@@ -1,17 +1,45 @@
 const { test, describe, beforeEach, after } = require('node:test')
 const assert = require('node:assert')
 const mongoose = require('mongoose')
+const bcrypt = require('bcrypt')
 const supertest = require('supertest')
 const helper = require('./test_helper')
 const Blog = require('../models/blog')
+const User = require('../models/user')
 const app = require('../app')
 
 const api = supertest(app)
 
 describe('when there is initially some blogs saved', () => {
+  let token
   beforeEach(async () => {
+    await User.deleteMany({})
+    const passwordHash = await bcrypt.hash('sherlocked', 10)
+    const initialUser = new User({
+      username: 'holmes',
+      name: 'Sherlock Holmes',
+      passwordHash
+    })
+    await initialUser.save()
+
+    const loggedIn = await api
+      .post('/api/login')
+      .send({ username: 'holmes', password: 'sherlocked' })
+      .expect(200)
+    token = loggedIn.body.token
+
     await Blog.deleteMany({})
-    await Blog.insertMany(helper.initialBlogs)
+    const initialBlog = {
+      title: 'Matin Testiploki',
+      author: 'Matti Meikäläinen',
+      url: 'matinploki.fi',
+    }
+    await api
+      .post('/api/blogs')
+      .send(initialBlog)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(201)
+      .expect('Content-Type', /application\/json/)
   })
 
   test('blogs are returned as json', async () => {
@@ -23,7 +51,7 @@ describe('when there is initially some blogs saved', () => {
 
   test('all blogs are returned', async () => {
     const blogs = await helper.blogsInDb()
-    assert.strictEqual(blogs.length, helper.initialBlogs.length)
+    assert.strictEqual(blogs.length, 1)
   })
 
   test('blogs have a unique property called id, not _id', async () => {
@@ -36,6 +64,7 @@ describe('when there is initially some blogs saved', () => {
 
   describe('adding a new blog', () => {
     test('a new blog can be added', async () => {
+      const blogsAtStart = await helper.blogsInDb()
       const newBlog = {
         title: 'Adventures of Sherlock Holmes',
         author: 'John H. Wilson',
@@ -46,13 +75,14 @@ describe('when there is initially some blogs saved', () => {
       await api
         .post('/api/blogs')
         .send(newBlog)
+        .set('Authorization', `Bearer ${token}`)
         .expect(201)
         .expect('Content-Type', /application\/json/)
 
-      const blogs = await helper.blogsInDb()
-      const title = blogs.map(r => r.title)
+      const blogsAtEnd = await helper.blogsInDb()
+      const title = blogsAtEnd.map(r => r.title)
 
-      assert.strictEqual(blogs.length, helper.initialBlogs.length + 1)
+      assert.strictEqual(blogsAtEnd.length, blogsAtStart.length + 1)
       assert(title.includes('Adventures of Sherlock Holmes'))
     })
 
@@ -66,6 +96,7 @@ describe('when there is initially some blogs saved', () => {
       await api
         .post('/api/blogs')
         .send(newBlog)
+        .set('Authorization', `Bearer ${token}`)
         .expect(201)
         .expect('Content-Type', /application\/json/)
 
@@ -75,6 +106,7 @@ describe('when there is initially some blogs saved', () => {
     })
 
     test('a blog without title or url is not added', async () => {
+      const blogsAtStart = await helper.blogsInDb()
       const newBlogNoTitle = {
         author: 'John H. Wilson',
         url: 'b221.co.uk'
@@ -83,6 +115,7 @@ describe('when there is initially some blogs saved', () => {
       await api
         .post('/api/blogs')
         .send(newBlogNoTitle)
+        .set('Authorization', `Bearer ${token}`)
         .expect(400)
 
       const newBlogNoUrl = {
@@ -93,11 +126,31 @@ describe('when there is initially some blogs saved', () => {
       await api
         .post('/api/blogs')
         .send(newBlogNoUrl)
+        .set('Authorization', `Bearer ${token}`)
         .expect(400)
 
-      const blogs = await helper.blogsInDb()
+      const blogsAtEnd = await helper.blogsInDb()
 
-      assert.strictEqual(blogs.length, helper.initialBlogs.length)
+      assert.strictEqual(blogsAtEnd.length, blogsAtStart.length)
+    })
+
+    test('a blog cannot be added if token is missing', async () => {
+      const blogsAtStart = await helper.blogsInDb()
+      const newBlog = {
+        title: 'Adventures of Sherlock Holmes',
+        author: 'John H. Wilson',
+        url: 'b221.co.uk',
+        likes: 0
+      }
+
+      await api
+        .post('/api/blogs')
+        .send(newBlog)
+        .expect(401)
+
+      const blogsAtEnd = await helper.blogsInDb()
+
+      assert.strictEqual(blogsAtEnd.length, blogsAtStart.length)
     })
   })
 
@@ -113,7 +166,6 @@ describe('when there is initially some blogs saved', () => {
       await api
         .put(`/api/blogs/${blogToUpdate.id}`)
         .send(updatedLikes)
-        .expect(updatedLikes)
 
       const blogsAtEnd = await helper.blogsInDb()
       const updatedBlog = blogsAtEnd[0]
@@ -148,11 +200,12 @@ describe('when there is initially some blogs saved', () => {
 
       await api
         .delete(`/api/blogs/${blogToDelete.id}`)
+        .set('Authorization', `Bearer ${token}`)
         .expect(204)
 
       const blogsAtEnd = await helper.blogsInDb()
 
-      assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length - 1)
+      assert.strictEqual(blogsAtEnd.length, blogsAtStart.length - 1)
 
       const titles = blogsAtEnd.map(r => r.title)
       assert(!titles.includes(blogToDelete.title))
@@ -163,6 +216,7 @@ describe('when there is initially some blogs saved', () => {
 
       await api
         .delete('/api/blogs/idnotvalid000')
+        .set('Authorization', `Bearer ${token}`)
         .expect(400)
 
       const blogsAtEnd = await helper.blogsInDb()
@@ -170,7 +224,6 @@ describe('when there is initially some blogs saved', () => {
       assert.strictEqual(blogsAtEnd.length, blogsAtStart.length)
     })
   })
-
   after(async () => {
     await mongoose.connection.close()
   })
