@@ -1,4 +1,4 @@
-const { test, describe, before, beforeEach, after } = require('node:test')
+const { test, describe, beforeEach, after } = require('node:test')
 const assert = require('node:assert')
 const mongoose = require('mongoose')
 const bcrypt = require('bcrypt')
@@ -11,6 +11,7 @@ const app = require('../app')
 const api = supertest(app)
 
 describe('when there is initially some blogs saved', () => {
+  let token
   beforeEach(async () => {
     await User.deleteMany({})
     const passwordHash = await bcrypt.hash('sherlocked', 10)
@@ -25,7 +26,7 @@ describe('when there is initially some blogs saved', () => {
       .post('/api/login')
       .send({ username: 'holmes', password: 'sherlocked' })
       .expect(200)
-    const token = loggedIn.body.token
+    token = loggedIn.body.token
 
     await Blog.deleteMany({})
     const initialBlog = {
@@ -71,12 +72,6 @@ describe('when there is initially some blogs saved', () => {
         likes: 0
       }
 
-      const loggedIn = await api
-        .post('/api/login')
-        .send({ username: 'holmes', password: 'sherlocked' })
-        .expect(200)
-      const token = loggedIn.body.token
-
       await api
         .post('/api/blogs')
         .send(newBlog)
@@ -98,12 +93,6 @@ describe('when there is initially some blogs saved', () => {
         url: 'b221.co.uk'
       }
 
-      const loggedIn = await api
-        .post('/api/login')
-        .send({ username: 'holmes', password: 'sherlocked' })
-        .expect(200)
-      const token = loggedIn.body.token
-
       await api
         .post('/api/blogs')
         .send(newBlog)
@@ -122,12 +111,6 @@ describe('when there is initially some blogs saved', () => {
         author: 'John H. Wilson',
         url: 'b221.co.uk'
       }
-
-      const loggedIn = await api
-        .post('/api/login')
-        .send({ username: 'holmes', password: 'sherlocked' })
-        .expect(200)
-      const token = loggedIn.body.token
 
       await api
         .post('/api/blogs')
@@ -215,12 +198,6 @@ describe('when there is initially some blogs saved', () => {
       const blogsAtStart = await helper.blogsInDb()
       const blogToDelete = blogsAtStart[0]
 
-      const loggedIn = await api
-        .post('/api/login')
-        .send({ username: 'holmes', password: 'sherlocked' })
-        .expect(200)
-      const token = loggedIn.body.token
-
       await api
         .delete(`/api/blogs/${blogToDelete.id}`)
         .set('Authorization', `Bearer ${token}`)
@@ -236,12 +213,6 @@ describe('when there is initially some blogs saved', () => {
 
     test('deleting does not succeed if id is invalid', async () => {
       const blogsAtStart = await helper.blogsInDb()
-
-      const loggedIn = await api
-        .post('/api/login')
-        .send({ username: 'holmes', password: 'sherlocked' })
-        .expect(200)
-      const token = loggedIn.body.token
 
       await api
         .delete('/api/blogs/idnotvalid000')

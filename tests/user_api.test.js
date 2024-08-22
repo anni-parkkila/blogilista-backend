@@ -4,7 +4,6 @@ const mongoose = require('mongoose')
 const bcrypt = require('bcrypt')
 const supertest = require('supertest')
 const helper = require('./test_helper')
-//const Blog = require('../models/blog')
 const app = require('../app')
 const User = require('../models/user')
 
