@@ -103,7 +103,6 @@ describe('when there is initially one user in db', () => {
       assert.strictEqual(usersAtEnd.length, usersAtStart.length)
     })
   })
-
 })
 
 // user test must be run before the blog test!
